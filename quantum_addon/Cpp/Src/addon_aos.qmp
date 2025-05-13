@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--${BaseAOs}-->
+<package name="BaseAOs" stereotype="0x02" namespace="APP::" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.state-machine.com/qm/qm7.xsd">
+ <!--${BaseAOs::Terminal}-->
+ <class name="Terminal" superclass="qpcpp::QActive">
+  <!--${BaseAOs::Terminal::inst}-->
+  <attribute name="inst" type="Terminal" visibility="0x00" properties="0x01"/>
+  <!--${BaseAOs::Terminal::m_timeEvt}-->
+  <attribute name="m_timeEvt" type="QP::QTimeEvt" visibility="0x02" properties="0x00"/>
+  <!--${BaseAOs::Terminal::m_gotReply}-->
+  <attribute name="m_gotReply" type="bool" visibility="0x00" properties="0x00"/>
+  <!--${BaseAOs::Terminal::m_input[20]}-->
+  <attribute name="m_input[20]" type="char" visibility="0x00" properties="0x00"/>
+  <!--${BaseAOs::Terminal::m_replySize}-->
+  <attribute name="m_replySize" type="std::uint8_t" visibility="0x00" properties="0x00"/>
+  <!--${BaseAOs::Terminal::m_gotChar}-->
+  <attribute name="m_gotChar" type="bool" visibility="0x00" properties="0x00"/>
+  <!--${BaseAOs::Terminal::m_maxInputSize}-->
+  <attribute name="m_maxInputSize" type="std::uint8_t" visibility="0x00" properties="0x00"/>
+  <!--${BaseAOs::Terminal::Terminal}-->
+  <operation name="Terminal" type="" visibility="0x00" properties="0x00">
+   <code>  : QActive(Q_STATE_CAST(&amp;initial)),
+    m_timeEvt(this, TIMEOUT_SIG, 0U)</code>
+  </operation>
+  <!--${BaseAOs::Terminal::DispatchCommand}-->
+  <operation name="DispatchCommand" type="void" visibility="0x00" properties="0x04">
+   <!--${BaseAOs::Terminal::DispatchCommand::command}-->
+   <parameter name="command" type="char"/>
+   <code>consoleDisplay(&quot;Empty Dispatch command\r\n&quot;);</code>
+  </operation>
+  <!--${BaseAOs::Terminal::SM}-->
+  <statechart properties="0x00">
+   <!--${BaseAOs::Terminal::SM::initial}-->
+   <initial target="../1">
+    <action>//consoleDisplay(&quot;Terminal running\r\n&quot;);
+m_maxInputSize = sizeof(m_input)/sizeof(m_input[0]);</action>
+    <initial_glyph color="3" conn="59,6,5,1,-17">
+     <action box="0,-2,10,2"/>
+    </initial_glyph>
+   </initial>
+   <!--${BaseAOs::Terminal::SM::start}-->
+   <state name="start">
+    <entry>//consoleDisplay(&quot;Terminal ::Idle\r\n&quot;);
+m_timeEvt.armX(1000, 0U);</entry>
+    <exit>m_timeEvt.disarm();</exit>
+    <!--${BaseAOs::Terminal::SM::start::TIMEOUT}-->
+    <tran trig="TIMEOUT" target="../../3">
+     <action brief="Ready"/>
+     <tran_glyph conn="28,12,2,0,8">
+      <action box="-8,3,16,2"/>
+     </tran_glyph>
+    </tran>
+    <state_glyph node="12,3,30,9">
+     <entry box="0,3,6,2"/>
+     <exit box="0,5,6,2"/>
+    </state_glyph>
+   </state>
+   <!--${BaseAOs::Terminal::SM::receiveUserReply}-->
+   <state name="receiveUserReply">
+    <entry>//consoleDisplay(&quot;Terminal ::Receiving USART\r\n&quot;);
+m_gotReply = false;
+m_gotChar = false;
+m_replySize = 0;</entry>
+    <!--${BaseAOs::Terminal::SM::receiveUserReply::initial}-->
+    <initial target="../1">
+     <action>m_gotReply = false;
+m_gotChar = true;
+m_replySize = 0;
+
+consoleReadAsyncInit();</action>
+     <initial_glyph conn="17,42,5,0,11,4">
+      <action box="0,-2,10,2"/>
+     </initial_glyph>
+    </initial>
+    <!--${BaseAOs::Terminal::SM::receiveUserReply::receivingNextChar}-->
+    <state name="receivingNextChar">
+     <entry>if ( m_gotChar )
+{
+    m_gotChar = false;
+    consoleReadByteAsync();
+}
+
+m_timeEvt.armX(300, 0U);</entry>
+     <exit>m_timeEvt.disarm();</exit>
+     <!--${BaseAOs::Terminal::SM::receiveUserReply::receivingNextCha~::TIMEOUT}-->
+     <tran trig="TIMEOUT">
+      <action brief="Check Input">m_gotChar = (consoleInputReady()) ? true : false;
+
+if ( m_gotChar )
+{
+    m_gotReply = (consoleInputDone()) ? true : false;
+}</action>
+      <!--${BaseAOs::Terminal::SM::receiveUserReply::receivingNextCha~::TIMEOUT::[NotDone]}-->
+      <choice target="../..">
+       <guard brief="NotDone">!m_gotReply</guard>
+       <action brief="Got Char"/>
+       <choice_glyph conn="22,61,5,2,11,-8">
+        <action box="4,-3,17,2"/>
+       </choice_glyph>
+      </choice>
+      <!--${BaseAOs::Terminal::SM::receiveUserReply::receivingNextCha~::TIMEOUT::[GotReply]}-->
+      <choice target="../../../../3">
+       <guard brief="GotReply">m_gotReply</guard>
+       <action brief="Done">m_replySize = consoleReadString(m_input, m_maxInputSize);
+consoleDisplay(&quot;\r\n&quot;);
+consoleDisplay(m_input);
+this-&gt;DispatchCommand(m_input[0]);</action>
+       <choice_glyph conn="22,61,4,1,9,36,-46,-16">
+        <action box="-8,4,16,3"/>
+       </choice_glyph>
+      </choice>
+      <tran_glyph conn="22,53,2,-1,8">
+       <action box="-7,2,19,2"/>
+      </tran_glyph>
+     </tran>
+     <state_glyph node="17,46,22,7">
+      <entry box="0,3,6,2"/>
+      <exit box="0,5,6,2"/>
+     </state_glyph>
+    </state>
+    <state_glyph node="11,36,34,37">
+     <entry box="0,3,6,2"/>
+    </state_glyph>
+   </state>
+   <!--${BaseAOs::Terminal::SM::sendUserPrompt}-->
+   <state name="sendUserPrompt">
+    <entry>m_timeEvt.armX(500, 0U);</entry>
+    <exit>m_timeEvt.disarm();</exit>
+    <!--${BaseAOs::Terminal::SM::sendUserPrompt::TIMEOUT}-->
+    <tran trig="TIMEOUT" target="../../2">
+     <action brief="Send Prompt">consoleDisplay(&quot;Enter command: &quot;);</action>
+     <tran_glyph conn="28,28,2,0,8">
+      <action box="-8,3,21,2"/>
+     </tran_glyph>
+    </tran>
+    <state_glyph node="12,20,30,8">
+     <entry box="0,3,6,2"/>
+     <exit box="0,5,6,2"/>
+    </state_glyph>
+   </state>
+   <state_diagram size="80,81"/>
+  </statechart>
+ </class>
+</package>

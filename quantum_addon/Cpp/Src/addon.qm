@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<model version="7.0.0" links="1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.state-machine.com/qm/qm7.xsd">
+ <documentation>About this example:
+-------------------
+Dining Philosopher Problem for STM32 NUCLEO-C031C6 board
+(see qpcpp\examples\arm-cm\dpp_nucleo-c031c6)
+
+This example demonstrates:
+- Multiple communicating active objects (Philo[5] and Table) with state machines
+- Publish-subscribe and direct event posting
+- Board Support Package abstraction for portability
+- BSP implementation for desktop OS (Windows, Linux, MacOS)
+- Platform-independent main() function
+- Makefile to build the generated code with GNU toolchain
+- Customized tools for building the generated code directly from QM&lt;/documentation&gt;
+
+Building the example:
+To build this example, you will need the QP/C++ framework installed on your computer and the GNU-ARM cross-compiler, which you can get by installing the QP-bundle from:
+
+https://www.state-machine.com/#Downloads
+
+Running the example:
+--------------------
+This example is a simple console application, which you can run from a terminal.
+
+For more QM examples for QP/C++ see:
+https://www.state-machine.com/qpcpp/exa.html</documentation>
+ <!--${qpcpp}-->
+ <framework name="qpcpp"/>
+ <extern_package file="./addon_shared.qmp"/>
+ <extern_package file="./addon_aos.qmp"/>
+ <!--${.}-->
+ <directory name=".">
+  <!--${.::../Inc}-->
+  <directory name="../Inc">
+   <!--${.::../Inc::terminal.hpp}-->
+   <file name="terminal.hpp">
+    <text>#ifndef TERMINAL_HPP_
+#define TERMINAL_HPP_
+
+$declare ${BaseShared}
+$declare ${BaseAOs::Terminal}
+
+#endif // DPP_HPP_</text>
+   </file>
+  </directory>
+  <!--${.::terminal.cpp}-->
+  <file name="terminal.cpp">
+   <text>#include &quot;qpcpp.hpp&quot;             // QP/C++ real-time embedded framework
+#include &quot;terminal.hpp&quot;               // DPP Application interface
+
+#include &quot;console.h&quot;
+
+//----------------------------------------------------------------------------
+// unnamed namespace for local definitions with internal linkage
+namespace {
+Q_DEFINE_THIS_FILE
+
+}
+
+//----------------------------------------------------------------------------
+$define ${BaseShared::AO_Terminal}
+$define ${BaseAOs::Terminal}</text>
+  </file>
+ </directory>
+</model>

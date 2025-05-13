@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--${BaseShared}-->
+<package name="BaseShared" stereotype="0x01" namespace="APP::" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.state-machine.com/qm/qm7.xsd">
+ <!--${BaseShared::AppSignals}-->
+ <attribute name="AppSignals" type="enum" visibility="0x04" properties="0x00">
+  <code>: QP::QSignal {
+    TIMEOUT_SIG = QP::Q_USER_SIG, // posted by time event
+    ADDON_LAST_SIG,
+};</code>
+ </attribute>
+ <!--${BaseShared::AO_Terminal}-->
+ <attribute name="AO_Terminal" type="QP::QActive * const" visibility="0x00" properties="0x00">
+  <code>= &amp;Terminal::inst;</code>
+ </attribute>
+</package>
