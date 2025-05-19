@@ -44,11 +44,26 @@ namespace APP {
 //${BaseShared::AppSignals} ..................................................
 enum AppSignals : QP::QSignal {
     TIMEOUT_SIG = QP::Q_USER_SIG, // posted by time event
+    CUSTOM_SIG,
     ADDON_LAST_SIG,
 };
 
 //${BaseShared::AO_Terminal} .................................................
 extern QP::QActive * const AO_Terminal;
+
+//${BaseShared::CustomEvt} ...................................................
+class CustomEvt : public QP::QEvt {
+public:
+    std::int8_t sigType;
+
+public:
+    constexpr CustomEvt(
+        QP::QSignal sig,
+        std::int16_t customType)
+     : QEvt(sig),
+       sigType(customType)
+    {}
+}; // class CustomEvt
 
 } // namespace APP
 //$enddecl${BaseShared} ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -73,6 +88,7 @@ public:
 public:
     Terminal();
     virtual void DispatchCommand(char command);
+    virtual void LoadCustomEvt(const CustomEvt* customEvent);
 
 protected:
     Q_STATE_DECL(initial);

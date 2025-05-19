@@ -28,6 +28,12 @@
    <parameter name="command" type="char"/>
    <code>consoleDisplay(&quot;Empty Dispatch command\r\n&quot;);</code>
   </operation>
+  <!--${BaseAOs::Terminal::LoadCustomEvt}-->
+  <operation name="LoadCustomEvt" type="void" visibility="0x00" properties="0x04">
+   <!--${BaseAOs::Terminal::LoadCustomEvt::customEvent}-->
+   <parameter name="customEvent" type="const CustomEvt*"/>
+   <code>consoleDisplay(&quot;Empty Custom Event command\r\n&quot;);</code>
+  </operation>
   <!--${BaseAOs::Terminal::SM}-->
   <statechart properties="0x00">
    <!--${BaseAOs::Terminal::SM::initial}-->
@@ -62,7 +68,7 @@ m_gotReply = false;
 m_gotChar = false;
 m_replySize = 0;</entry>
     <!--${BaseAOs::Terminal::SM::receiveUserReply::initial}-->
-    <initial target="../1">
+    <initial target="../2">
      <action>m_gotReply = false;
 m_gotChar = true;
 m_replySize = 0;
@@ -72,6 +78,14 @@ consoleReadAsyncInit();</action>
       <action box="0,-2,10,2"/>
      </initial_glyph>
     </initial>
+    <!--${BaseAOs::Terminal::SM::receiveUserReply::CUSTOM}-->
+    <tran trig="CUSTOM">
+     <action>const CustomEvt* pe = static_cast&lt;const CustomEvt*&gt;(e);
+LoadCustomEvent(pe);</action>
+     <tran_glyph conn="11,74,3,-1,14">
+      <action box="2,-2,9,2"/>
+     </tran_glyph>
+    </tran>
     <!--${BaseAOs::Terminal::SM::receiveUserReply::receivingNextChar}-->
     <state name="receivingNextChar">
      <entry>if ( m_gotChar )
@@ -118,7 +132,7 @@ this-&gt;DispatchCommand(m_input[0]);</action>
       <exit box="0,5,6,2"/>
      </state_glyph>
     </state>
-    <state_glyph node="11,36,34,37">
+    <state_glyph node="11,36,34,43">
      <entry box="0,3,6,2"/>
     </state_glyph>
    </state>

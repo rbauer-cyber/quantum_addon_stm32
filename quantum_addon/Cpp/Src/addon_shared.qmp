@@ -5,6 +5,7 @@
  <attribute name="AppSignals" type="enum" visibility="0x04" properties="0x00">
   <code>: QP::QSignal {
     TIMEOUT_SIG = QP::Q_USER_SIG, // posted by time event
+    CUSTOM_SIG,
     ADDON_LAST_SIG,
 };</code>
  </attribute>
@@ -12,4 +13,18 @@
  <attribute name="AO_Terminal" type="QP::QActive * const" visibility="0x00" properties="0x00">
   <code>= &amp;Terminal::inst;</code>
  </attribute>
+ <!--${BaseShared::CustomEvt}-->
+ <class name="CustomEvt" superclass="qpcpp::QEvt">
+  <!--${BaseShared::CustomEvt::sigType}-->
+  <attribute name="sigType" type="std::int8_t" visibility="0x00" properties="0x00"/>
+  <!--${BaseShared::CustomEvt::CustomEvt}-->
+  <operation name="CustomEvt" type="constexpr" visibility="0x00" properties="0x02">
+   <!--${BaseShared::CustomEvt::CustomEvt::sig}-->
+   <parameter name="sig" type="QP::QSignal"/>
+   <!--${BaseShared::CustomEvt::CustomEvt::customType}-->
+   <parameter name="customType" type="std::int16_t"/>
+   <code> : QEvt(sig),
+   sigType(customType)</code>
+  </operation>
+ </class>
 </package>

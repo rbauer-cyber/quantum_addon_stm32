@@ -79,11 +79,17 @@ void Terminal::DispatchCommand(char command) {
     consoleDisplay("Empty Dispatch command\r\n");
 }
 
+//${BaseAOs::Terminal::LoadCustomEvt} ........................................
+void Terminal::LoadCustomEvt(const CustomEvt* customEvent) {
+    consoleDisplay("Empty Custom Event command\r\n");
+}
+
 //${BaseAOs::Terminal::SM} ...................................................
 Q_STATE_DEF(Terminal, initial) {
     //${BaseAOs::Terminal::SM::initial}
     //consoleDisplay("Terminal running\r\n");
     m_maxInputSize = sizeof(m_input)/sizeof(m_input[0]);
+    subscribe(CUSTOM_SIG);
     return tran(&start);
 }
 
@@ -138,6 +144,14 @@ Q_STATE_DEF(Terminal, receiveUserReply) {
 
             consoleReadAsyncInit();
             status_ = tran(&receivingNextChar);
+            break;
+        }
+        //${BaseAOs::Terminal::SM::receiveUserReply::CUSTOM}
+        case CUSTOM_SIG: {
+            const CustomEvt* pe = static_cast<const CustomEvt*>(e);
+            LoadCustomEvt(pe);
+        	//consoleDisplay("received CUSTOM_SIG\r\n");
+            status_ = Q_RET_HANDLED;
             break;
         }
         default: {
