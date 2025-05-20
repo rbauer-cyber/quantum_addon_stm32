@@ -24,13 +24,14 @@ void consoleInit()
 }
 
 static char s_buffer[80];
+static size_t s_bufferSize = sizeof(s_buffer);
 
 void consoleDisplayArgs(const char * format, ... )
 {
 	va_list args;
 	va_start (args, format);
-	vsnprintf (s_buffer, 60, format, args);
-	s_buffer[59] = 0;
+	vsnprintf (s_buffer, s_bufferSize-2, format, args);
+	s_buffer[s_bufferSize-1] = 0;
 	va_end (args);
 
 	HAL_UART_Transmit(&huart2, (const uint8_t*)s_buffer, strlen(s_buffer), 1000);
@@ -45,8 +46,8 @@ void consoleDisplayPromptArgs(const char * format, ... )
 {
 	va_list args;
 	va_start (args, format);
-	vsnprintf (s_buffer, 60, format, args);
-	s_buffer[59] = 0;
+	vsnprintf (s_buffer, s_bufferSize-2, format, args);
+	s_buffer[s_bufferSize-1] = 0;
 	va_end (args);
 
 	HAL_UART_Transmit(&huart2, (const uint8_t*)s_buffer, strlen(s_buffer), 1000);

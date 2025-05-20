@@ -9,8 +9,8 @@
   <attribute name="m_timeEvt" type="QP::QTimeEvt" visibility="0x02" properties="0x00"/>
   <!--${BaseAOs::Terminal::m_gotReply}-->
   <attribute name="m_gotReply" type="bool" visibility="0x00" properties="0x00"/>
-  <!--${BaseAOs::Terminal::m_input[20]}-->
-  <attribute name="m_input[20]" type="char" visibility="0x00" properties="0x00"/>
+  <!--${BaseAOs::Terminal::m_input[40]}-->
+  <attribute name="m_input[40]" type="char" visibility="0x00" properties="0x00"/>
   <!--${BaseAOs::Terminal::m_replySize}-->
   <attribute name="m_replySize" type="std::uint8_t" visibility="0x00" properties="0x00"/>
   <!--${BaseAOs::Terminal::m_gotChar}-->
