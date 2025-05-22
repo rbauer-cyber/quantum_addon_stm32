@@ -84,35 +84,37 @@ void Terminal::LoadCustomEvt(const CustomEvt* customEvent) {
     consoleDisplay("Empty Custom Event command\r\n");
 }
 
+//${BaseAOs::Terminal::PublishShowStateEvent} ................................
+void Terminal::PublishShowStateEvent() {
+    // Cause system to broadcast state
+    CustomEvt* pe = Q_NEW(CustomEvt, SHOW_STATE_SIG);
+    QP::QActive::PUBLISH(pe, this);
+}
+
 //${BaseAOs::Terminal::SM} ...................................................
 Q_STATE_DEF(Terminal, initial) {
     //${BaseAOs::Terminal::SM::initial}
-    //consoleDisplay("Terminal running\r\n");
     m_maxInputSize = sizeof(m_input)/sizeof(m_input[0]);
     subscribe(CUSTOM_SIG);
-    return tran(&start);
+    return tran(&running);
 }
 
-//${BaseAOs::Terminal::SM::start} ............................................
-Q_STATE_DEF(Terminal, start) {
+//${BaseAOs::Terminal::SM::running} ..........................................
+Q_STATE_DEF(Terminal, running) {
     QP::QState status_;
     switch (e->sig) {
-        //${BaseAOs::Terminal::SM::start}
-        case Q_ENTRY_SIG: {
-            //consoleDisplay("Terminal ::Idle\r\n");
-            m_timeEvt.armX(1000, 0U);
-            status_ = Q_RET_HANDLED;
+        //${BaseAOs::Terminal::SM::running::initial}
+        case Q_INIT_SIG: {
+            consoleDisplay("Terminal running\r\n");
+            m_maxInputSize = sizeof(m_input)/sizeof(m_input[0]);
+            status_ = tran(&start);
             break;
         }
-        //${BaseAOs::Terminal::SM::start}
-        case Q_EXIT_SIG: {
-            m_timeEvt.disarm();
+        //${BaseAOs::Terminal::SM::running::CUSTOM}
+        case CUSTOM_SIG: {
+            const CustomEvt* pe = static_cast<const CustomEvt*>(e);
+            LoadCustomEvt(pe);
             status_ = Q_RET_HANDLED;
-            break;
-        }
-        //${BaseAOs::Terminal::SM::start::TIMEOUT}
-        case TIMEOUT_SIG: {
-            status_ = tran(&sendUserPrompt);
             break;
         }
         default: {
@@ -123,11 +125,11 @@ Q_STATE_DEF(Terminal, start) {
     return status_;
 }
 
-//${BaseAOs::Terminal::SM::receiveUserReply} .................................
+//${BaseAOs::Terminal::SM::running::receiveUserReply} ........................
 Q_STATE_DEF(Terminal, receiveUserReply) {
     QP::QState status_;
     switch (e->sig) {
-        //${BaseAOs::Terminal::SM::receiveUserReply}
+        //${BaseAOs::Terminal::SM::running::receiveUserReply}
         case Q_ENTRY_SIG: {
             //consoleDisplay("Terminal ::Receiving USART\r\n");
             m_gotReply = false;
@@ -136,7 +138,7 @@ Q_STATE_DEF(Terminal, receiveUserReply) {
             status_ = Q_RET_HANDLED;
             break;
         }
-        //${BaseAOs::Terminal::SM::receiveUserReply::initial}
+        //${BaseAOs::Terminal::SM::running::receiveUserReply::initial}
         case Q_INIT_SIG: {
             m_gotReply = false;
             m_gotChar = true;
@@ -146,27 +148,19 @@ Q_STATE_DEF(Terminal, receiveUserReply) {
             status_ = tran(&receivingNextChar);
             break;
         }
-        //${BaseAOs::Terminal::SM::receiveUserReply::CUSTOM}
-        case CUSTOM_SIG: {
-            const CustomEvt* pe = static_cast<const CustomEvt*>(e);
-            LoadCustomEvt(pe);
-        	//consoleDisplay("received CUSTOM_SIG\r\n");
-            status_ = Q_RET_HANDLED;
-            break;
-        }
         default: {
-            status_ = super(&top);
+            status_ = super(&running);
             break;
         }
     }
     return status_;
 }
 
-//${BaseAOs::Terminal::SM::receiveUserReply::receivingNextChar} ..............
+//${BaseAOs::Terminal::SM::running::receiveUserReply::receivingNextChar} .....
 Q_STATE_DEF(Terminal, receivingNextChar) {
     QP::QState status_;
     switch (e->sig) {
-        //${BaseAOs::Terminal::SM::receiveUserReply::receivingNextChar}
+        //${BaseAOs::Terminal::SM::running::receiveUserReply::receivingNextChar}
         case Q_ENTRY_SIG: {
             if ( m_gotChar )
             {
@@ -178,13 +172,13 @@ Q_STATE_DEF(Terminal, receivingNextChar) {
             status_ = Q_RET_HANDLED;
             break;
         }
-        //${BaseAOs::Terminal::SM::receiveUserReply::receivingNextChar}
+        //${BaseAOs::Terminal::SM::running::receiveUserReply::receivingNextChar}
         case Q_EXIT_SIG: {
             m_timeEvt.disarm();
             status_ = Q_RET_HANDLED;
             break;
         }
-        //${BaseAOs::Terminal::SM::receiveUserReply::receivingNextCha~::TIMEOUT}
+        //${BaseAOs::Terminal::SM::running::receiveUserReply::receivingNextCha~::TIMEOUT}
         case TIMEOUT_SIG: {
             m_gotChar = (consoleInputReady()) ? true : false;
 
@@ -192,11 +186,11 @@ Q_STATE_DEF(Terminal, receivingNextChar) {
             {
                 m_gotReply = (consoleInputDone()) ? true : false;
             }
-            //${BaseAOs::Terminal::SM::receiveUserReply::receivingNextCha~::TIMEOUT::[NotDone]}
+            //${BaseAOs::Terminal::SM::running::receiveUserReply::receivingNextCha~::TIMEOUT::[NotDone]}
             if (!m_gotReply) {
                 status_ = tran(&receivingNextChar);
             }
-            //${BaseAOs::Terminal::SM::receiveUserReply::receivingNextCha~::TIMEOUT::[GotReply]}
+            //${BaseAOs::Terminal::SM::running::receiveUserReply::receivingNextCha~::TIMEOUT::[GotReply]}
             else if (m_gotReply) {
                 m_replySize = consoleReadString(m_input, m_maxInputSize);
                 consoleDisplay("\r\n");
@@ -217,30 +211,61 @@ Q_STATE_DEF(Terminal, receivingNextChar) {
     return status_;
 }
 
-//${BaseAOs::Terminal::SM::sendUserPrompt} ...................................
-Q_STATE_DEF(Terminal, sendUserPrompt) {
+//${BaseAOs::Terminal::SM::running::start} ...................................
+Q_STATE_DEF(Terminal, start) {
     QP::QState status_;
     switch (e->sig) {
-        //${BaseAOs::Terminal::SM::sendUserPrompt}
+        //${BaseAOs::Terminal::SM::running::start}
         case Q_ENTRY_SIG: {
-            m_timeEvt.armX(500, 0U);
+            //consoleDisplay("Terminal ::Idle\r\n");
+            m_timeEvt.armX(1000, 0U);
             status_ = Q_RET_HANDLED;
             break;
         }
-        //${BaseAOs::Terminal::SM::sendUserPrompt}
+        //${BaseAOs::Terminal::SM::running::start}
         case Q_EXIT_SIG: {
             m_timeEvt.disarm();
             status_ = Q_RET_HANDLED;
             break;
         }
-        //${BaseAOs::Terminal::SM::sendUserPrompt::TIMEOUT}
+        //${BaseAOs::Terminal::SM::running::start::TIMEOUT}
+        case TIMEOUT_SIG: {
+            PublishShowStateEvent();
+            status_ = tran(&sendUserPrompt);
+            break;
+        }
+        default: {
+            status_ = super(&running);
+            break;
+        }
+    }
+    return status_;
+}
+
+//${BaseAOs::Terminal::SM::running::sendUserPrompt} ..........................
+Q_STATE_DEF(Terminal, sendUserPrompt) {
+    QP::QState status_;
+    switch (e->sig) {
+        //${BaseAOs::Terminal::SM::running::sendUserPrompt}
+        case Q_ENTRY_SIG: {
+            m_timeEvt.armX(500, 0U);
+            status_ = Q_RET_HANDLED;
+            break;
+        }
+        //${BaseAOs::Terminal::SM::running::sendUserPrompt}
+        case Q_EXIT_SIG: {
+            m_timeEvt.disarm();
+            status_ = Q_RET_HANDLED;
+            break;
+        }
+        //${BaseAOs::Terminal::SM::running::sendUserPrompt::TIMEOUT}
         case TIMEOUT_SIG: {
             consoleDisplay("Enter command: ");
             status_ = tran(&receiveUserReply);
             break;
         }
         default: {
-            status_ = super(&top);
+            status_ = super(&running);
             break;
         }
     }

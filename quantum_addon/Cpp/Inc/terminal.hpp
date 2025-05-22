@@ -45,6 +45,7 @@ namespace APP {
 enum AppSignals : QP::QSignal {
     TIMEOUT_SIG = QP::Q_USER_SIG, // posted by time event
     CUSTOM_SIG,
+    SHOW_STATE_SIG,
     ADDON_LAST_SIG,
 };
 
@@ -80,7 +81,7 @@ private:
 
 public:
     bool m_gotReply;
-    char m_input[20];
+    char m_input[40];
     std::uint8_t m_replySize;
     bool m_gotChar;
     std::uint8_t m_maxInputSize;
@@ -90,11 +91,15 @@ public:
     virtual void DispatchCommand(char command);
     virtual void LoadCustomEvt(const CustomEvt* customEvent);
 
+private:
+    void PublishShowStateEvent();
+
 protected:
     Q_STATE_DECL(initial);
-    Q_STATE_DECL(start);
+    Q_STATE_DECL(running);
     Q_STATE_DECL(receiveUserReply);
     Q_STATE_DECL(receivingNextChar);
+    Q_STATE_DECL(start);
     Q_STATE_DECL(sendUserPrompt);
 }; // class Terminal
 
