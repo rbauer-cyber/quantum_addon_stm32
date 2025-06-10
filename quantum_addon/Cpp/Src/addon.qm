@@ -43,6 +43,18 @@ $declare ${BaseAOs::Terminal}
 
 #endif // DPP_HPP_</text>
    </file>
+   <!--${.::../Inc::measure.hpp}-->
+   <file name="measure.hpp">
+    <text>#ifndef MEASURE_H
+#define MEASURE_H
+
+#include &quot;qpcpp.hpp&quot;             // QP/C++ real-time embedded framework
+#include &lt;cstdint&gt;
+
+$declare ${BaseAOs::CMeasure}
+
+#endif</text>
+   </file>
   </directory>
   <!--${.::terminal.cpp}-->
   <file name="terminal.cpp">
@@ -61,6 +73,15 @@ Q_DEFINE_THIS_FILE
 //----------------------------------------------------------------------------
 $define ${BaseShared::AO_Terminal}
 $define ${BaseAOs::Terminal}</text>
+  </file>
+  <!--${.::measure.cpp}-->
+  <file name="measure.cpp">
+   <text>#include &quot;measure.hpp&quot;
+#include &quot;console.h&quot;
+#include &quot;main.h&quot;
+
+// ask QM to declare the Measure class
+$define ${BaseAOs::CMeasure}</text>
   </file>
  </directory>
 </model>

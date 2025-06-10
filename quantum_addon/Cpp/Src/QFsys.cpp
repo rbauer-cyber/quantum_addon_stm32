@@ -7,6 +7,8 @@
 
 #include "stm32f4xx_hal.h"
 
+#define NO_CRITICAL_SECTIONS
+
 // Define functions for enabling/disabling HAL interrupts for critical sections
 // and for setting/detecting Q system events.
 
@@ -16,22 +18,30 @@ extern "C" {
 
 void QF_int_disable_(void)
 {
+#ifndef NO_CRITICAL_SECTIONS
 	HAL_SuspendTick();
+#endif
 }
 
 void QF_int_enable_(void)
 {
-	HAL_ResumeTick();
+#ifndef NO_CRITICAL_SECTIONS
+	//HAL_ResumeTick();
+#endif
 }
 
 void QF_crit_entry_(void)
 {
-	HAL_SuspendTick();
+#ifndef NO_CRITICAL_SECTIONS
+	//HAL_SuspendTick();
+#endif
 }
 
 void QF_crit_exit_(void)
 {
-	HAL_ResumeTick();
+#ifndef NO_CRITICAL_SECTIONS
+	//HAL_ResumeTick();
+#endif
 }
 
 // The following set of functions assume the STM32 instructions

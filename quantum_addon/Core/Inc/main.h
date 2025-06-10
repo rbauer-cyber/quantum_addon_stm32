@@ -28,6 +28,7 @@ extern "C" {
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f4xx_hal.h"
+extern uint64_t getMicros();
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */

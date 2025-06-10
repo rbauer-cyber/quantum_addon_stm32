@@ -1,3 +1,5 @@
+#define NO_CONSOLE
+
 #include "console.h"
 #include "multiLed.hpp"
 #include "digitalOut.hpp"

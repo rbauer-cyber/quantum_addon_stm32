@@ -34,8 +34,22 @@
    <parameter name="customEvent" type="const CustomEvt*"/>
    <code>consoleDisplay(&quot;Empty Custom Event command\r\n&quot;);</code>
   </operation>
+  <!--${BaseAOs::Terminal::PublishShowStateEvent}-->
+  <operation name="PublishShowStateEvent" type="void" visibility="0x02" properties="0x00">
+   <code>// Cause system to broadcast state
+CustomEvt* pe = Q_NEW(CustomEvt, SHOW_STATE_SIG);
+QP::QActive::PUBLISH(pe, this);</code>
+  </operation>
   <!--${BaseAOs::Terminal::SM}-->
   <statechart properties="0x00">
+   <!--${BaseAOs::Terminal::SM::initial}-->
+   <initial target="../1">
+    <action>m_maxInputSize = sizeof(m_input)/sizeof(m_input[0]);
+subscribe(CUSTOM_SIG);</action>
+    <initial_glyph conn="71,14,5,1,-9">
+     <action box="0,-2,10,2"/>
+    </initial_glyph>
+   </initial>
    <!--${BaseAOs::Terminal::SM::running}-->
    <state name="running">
     <!--${BaseAOs::Terminal::SM::running::initial}-->
@@ -49,7 +63,7 @@ m_maxInputSize = sizeof(m_input)/sizeof(m_input[0]);</action>
     <!--${BaseAOs::Terminal::SM::running::CUSTOM}-->
     <tran trig="CUSTOM">
      <action>const CustomEvt* pe = static_cast&lt;const CustomEvt*&gt;(e);
-LoadCustomEvent(pe);</action>
+LoadCustomEvt(pe);</action>
      <tran_glyph conn="62,20,1,-1,-13">
       <action box="-11,-3,9,2"/>
      </tran_glyph>
@@ -128,7 +142,7 @@ m_timeEvt.armX(1000, 0U);</entry>
      <exit>m_timeEvt.disarm();</exit>
      <!--${BaseAOs::Terminal::SM::running::start::TIMEOUT}-->
      <tran trig="TIMEOUT" target="../../4">
-      <action brief="Ready"/>
+      <action brief="Ready">PublishShowStateEvent();</action>
       <tran_glyph conn="28,17,2,0,8">
        <action box="-8,3,16,2"/>
       </tran_glyph>
@@ -158,5 +172,119 @@ m_timeEvt.armX(1000, 0U);</entry>
    </state>
    <state_diagram size="74,89"/>
   </statechart>
+ </class>
+ <!--${BaseAOs::CMeasure}-->
+ <class name="CMeasure">
+  <!--${BaseAOs::CMeasure::m_intervalStartTime}-->
+  <attribute name="m_intervalStartTime" type="std::uint64_t" visibility="0x00" properties="0x00"/>
+  <!--${BaseAOs::CMeasure::m_intervalEndTime}-->
+  <attribute name="m_intervalEndTime" type="std::uint64_t" visibility="0x00" properties="0x00"/>
+  <!--${BaseAOs::CMeasure::m_intervalElapsedTime}-->
+  <attribute name="m_intervalElapsedTime" type="std::uint32_t" visibility="0x00" properties="0x00"/>
+  <!--${BaseAOs::CMeasure::m_maxElapsedTimeDelta}-->
+  <attribute name="m_maxElapsedTimeDelta" type="std::uint32_t" visibility="0x00" properties="0x00"/>
+  <!--${BaseAOs::CMeasure::m_intervalElapsedTimeDelta}-->
+  <attribute name="m_intervalElapsedTimeDelta" type="std::uint32_t" visibility="0x00" properties="0x00"/>
+  <!--${BaseAOs::CMeasure::m_intervalCount}-->
+  <attribute name="m_intervalCount" type="std::uint32_t" visibility="0x00" properties="0x00"/>
+  <!--${BaseAOs::CMeasure::m_minElapsedTimeDelta}-->
+  <attribute name="m_minElapsedTimeDelta" type="std::uint32_t" visibility="0x00" properties="0x00"/>
+  <!--${BaseAOs::CMeasure::m_avgElapsedTimeDelta}-->
+  <attribute name="m_avgElapsedTimeDelta" type="std::uint32_t" visibility="0x00" properties="0x00"/>
+  <!--${BaseAOs::CMeasure::kIntervalOffset}-->
+  <attribute name="kIntervalOffset" type="const std::uint32_t" visibility="0x00" properties="0x00"/>
+  <!--${BaseAOs::CMeasure::m_avgElapsedTime}-->
+  <attribute name="m_avgElapsedTime" type="std::uint32_t" visibility="0x00" properties="0x00"/>
+  <!--${BaseAOs::CMeasure::m_intervalThresholdCount}-->
+  <attribute name="m_intervalThresholdCount" type="std::uint32_t" visibility="0x00" properties="0x00"/>
+  <!--${BaseAOs::CMeasure::m_updateCount}-->
+  <attribute name="m_updateCount" type="std::uint16_t" visibility="0x00" properties="0x00"/>
+  <!--${BaseAOs::CMeasure::UpdateElapsedTime}-->
+  <operation name="UpdateElapsedTime" type="void" visibility="0x00" properties="0x00">
+   <code>m_intervalEndTime = getMicros();
+uint32_t elapsedTime = m_intervalEndTime - m_intervalStartTime;
+uint32_t elapsedTimeDelta = 0;
+
+if ( elapsedTime &gt; 1000 )
+{
+    if ( m_updateCount &gt; kIntervalOffset )
+    {
+        if ( elapsedTime &gt; m_intervalElapsedTime )
+            elapsedTimeDelta = elapsedTime - m_intervalElapsedTime;
+        else
+            elapsedTimeDelta = m_intervalElapsedTime - elapsedTime;
+
+        m_intervalCount += 1;
+
+        if ( elapsedTimeDelta &gt; m_maxElapsedTimeDelta )
+        {
+            m_maxElapsedTimeDelta = elapsedTimeDelta;
+        }
+        if ( elapsedTimeDelta &lt; m_minElapsedTimeDelta )
+        {
+            m_minElapsedTimeDelta = elapsedTimeDelta;
+        }
+
+        m_avgElapsedTimeDelta += elapsedTimeDelta;
+        m_avgElapsedTime += elapsedTime;
+
+        if ( elapsedTimeDelta &gt; 100 )
+        {
+            m_intervalThresholdCount += 1;
+        }
+    }
+    else
+    {
+        m_updateCount += 1;
+    }
+
+    m_intervalElapsedTime = elapsedTime;
+}</code>
+  </operation>
+  <!--${BaseAOs::CMeasure::DisplayElapsedTime}-->
+  <operation name="DisplayElapsedTime" type="void" visibility="0x00" properties="0x00">
+   <code>CONSOLE_DISPLAY_ARGS(&quot;elapsed time us = %d\r\n&quot;, m_intervalElapsedTime);</code>
+  </operation>
+  <!--${BaseAOs::CMeasure::DisplayElapsedTimeDelta}-->
+  <operation name="DisplayElapsedTimeDelta" type="void" visibility="0x00" properties="0x00">
+   <code>if ( m_intervalCount &gt; 120 )
+{
+    m_avgElapsedTimeDelta = m_avgElapsedTimeDelta / m_intervalCount;
+    m_avgElapsedTime = m_avgElapsedTime / m_intervalCount;
+
+    CONSOLE_DISPLAY_ARGS(
+        &quot;max/min/avg/avg/cnt elapsed time delta us = %d/%d/%d/%d/%d\r\n&quot;,
+        m_maxElapsedTimeDelta, m_minElapsedTimeDelta,
+        m_avgElapsedTimeDelta, m_avgElapsedTime,
+        m_intervalThresholdCount);
+
+    m_maxElapsedTimeDelta = 0;
+    m_minElapsedTimeDelta = 10000;
+    m_avgElapsedTimeDelta = 0;
+    m_avgElapsedTime = 0;
+    m_intervalEndTime = getMicros();
+    m_intervalThresholdCount = 0;
+    m_intervalCount = 0;
+}</code>
+  </operation>
+  <!--${BaseAOs::CMeasure::Initialize}-->
+  <operation name="Initialize" type="void" visibility="0x00" properties="0x00">
+   <code>m_intervalElapsedTime = 0;
+m_maxElapsedTimeDelta = 0;
+m_minElapsedTimeDelta = 10000;
+m_avgElapsedTimeDelta = 0;
+m_avgElapsedTime = 0;
+m_intervalCount = 0;
+m_intervalThresholdCount = 0;
+m_updateCount = 0;</code>
+  </operation>
+  <!--${BaseAOs::CMeasure::Start}-->
+  <operation name="Start" type="void" visibility="0x00" properties="0x00">
+   <code>m_intervalStartTime = getMicros();</code>
+  </operation>
+  <!--${BaseAOs::CMeasure::CMeasure}-->
+  <operation name="CMeasure" type="" visibility="0x00" properties="0x00">
+   <code>: kIntervalOffset(4)</code>
+  </operation>
  </class>
 </package>

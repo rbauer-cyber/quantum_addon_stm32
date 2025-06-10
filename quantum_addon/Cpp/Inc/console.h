@@ -4,7 +4,7 @@
  *  Created on: Dec 5, 2024
  *      Author: rbauer
  */
-#define NO_CONSOLE
+//#define NO_CONSOLE
 
 #ifndef CONSOLE_H_
 #define CONSOLE_H_

@@ -6,6 +6,7 @@
   <code>: QP::QSignal {
     TIMEOUT_SIG = QP::Q_USER_SIG, // posted by time event
     CUSTOM_SIG,
+    SHOW_STATE_SIG,
     ADDON_LAST_SIG,
 };</code>
  </attribute>
