@@ -192,91 +192,104 @@ m_timeEvt.armX(1000, 0U);</entry>
   <!--${BaseAOs::CMeasure::m_avgElapsedTimeDelta}-->
   <attribute name="m_avgElapsedTimeDelta" type="std::uint32_t" visibility="0x00" properties="0x00"/>
   <!--${BaseAOs::CMeasure::kIntervalOffset}-->
-  <attribute name="kIntervalOffset" type="const std::uint32_t" visibility="0x00" properties="0x00"/>
+  <attribute name="kIntervalOffset" type="std::uint32_t" visibility="0x00" properties="0x00"/>
   <!--${BaseAOs::CMeasure::m_avgElapsedTime}-->
   <attribute name="m_avgElapsedTime" type="std::uint32_t" visibility="0x00" properties="0x00"/>
   <!--${BaseAOs::CMeasure::m_intervalThresholdCount}-->
   <attribute name="m_intervalThresholdCount" type="std::uint32_t" visibility="0x00" properties="0x00"/>
   <!--${BaseAOs::CMeasure::m_updateCount}-->
   <attribute name="m_updateCount" type="std::uint16_t" visibility="0x00" properties="0x00"/>
+  <!--${BaseAOs::CMeasure::kMinElapsedTime}-->
+  <attribute name="kMinElapsedTime" type="std::uint32_t" visibility="0x00" properties="0x00"/>
+  <!--${BaseAOs::CMeasure::kIntervalCount}-->
+  <attribute name="kIntervalCount" type="std::uint32_t" visibility="0x00" properties="0x00"/>
+  <!--${BaseAOs::CMeasure::m_running}-->
+  <attribute name="m_running" type="bool" visibility="0x00" properties="0x00"/>
   <!--${BaseAOs::CMeasure::UpdateElapsedTime}-->
   <operation name="UpdateElapsedTime" type="void" visibility="0x00" properties="0x00">
-   <code>m_intervalEndTime = getMicros();
-uint32_t elapsedTime = m_intervalEndTime - m_intervalStartTime;
-uint32_t elapsedTimeDelta = 0;
-
-if ( elapsedTime &gt; 1000 )
+   <code>if ( m_running )
 {
-    if ( m_updateCount &gt; kIntervalOffset )
+    m_intervalEndTime = getMicros();
+    uint32_t elapsedTime = m_intervalEndTime - m_intervalStartTime;
+    uint32_t elapsedTimeDelta = 0;
+
+    if ( elapsedTime &gt;= kMinElapsedTime )
     {
-        if ( elapsedTime &gt; m_intervalElapsedTime )
-            elapsedTimeDelta = elapsedTime - m_intervalElapsedTime;
+        if ( m_updateCount &gt;= kIntervalOffset )
+        {
+            if ( elapsedTime &gt; m_intervalElapsedTime )
+                elapsedTimeDelta = elapsedTime - m_intervalElapsedTime;
+            else
+                elapsedTimeDelta = m_intervalElapsedTime - elapsedTime;
+
+            m_intervalCount += 1;
+
+            if ( elapsedTimeDelta &gt; m_maxElapsedTimeDelta )
+            {
+                m_maxElapsedTimeDelta = elapsedTimeDelta;
+            }
+            if ( elapsedTimeDelta &lt; m_minElapsedTimeDelta )
+            {
+                m_minElapsedTimeDelta = elapsedTimeDelta;
+            }
+
+            m_avgElapsedTimeDelta += elapsedTimeDelta;
+            m_avgElapsedTime += elapsedTime;
+
+            if ( elapsedTimeDelta &gt; 100 )
+            {
+                m_intervalThresholdCount += 1;
+            }
+        }
         else
-            elapsedTimeDelta = m_intervalElapsedTime - elapsedTime;
-
-        m_intervalCount += 1;
-
-        if ( elapsedTimeDelta &gt; m_maxElapsedTimeDelta )
         {
-            m_maxElapsedTimeDelta = elapsedTimeDelta;
-        }
-        if ( elapsedTimeDelta &lt; m_minElapsedTimeDelta )
-        {
-            m_minElapsedTimeDelta = elapsedTimeDelta;
+            m_updateCount += 1;
         }
 
-        m_avgElapsedTimeDelta += elapsedTimeDelta;
-        m_avgElapsedTime += elapsedTime;
-
-        if ( elapsedTimeDelta &gt; 100 )
-        {
-            m_intervalThresholdCount += 1;
-        }
+        m_intervalElapsedTime = elapsedTime;
     }
-    else
-    {
-        m_updateCount += 1;
-    }
-
-    m_intervalElapsedTime = elapsedTime;
 }</code>
   </operation>
   <!--${BaseAOs::CMeasure::DisplayElapsedTime}-->
   <operation name="DisplayElapsedTime" type="void" visibility="0x00" properties="0x00">
-   <code>CONSOLE_DISPLAY_ARGS(&quot;elapsed time us = %d\r\n&quot;, m_intervalElapsedTime);</code>
+   <code>if ( m_running )
+{
+    CONSOLE_DISPLAY_ARGS(&quot;elapsed time us = %d\r\n&quot;, m_intervalElapsedTime);
+}</code>
   </operation>
   <!--${BaseAOs::CMeasure::DisplayElapsedTimeDelta}-->
   <operation name="DisplayElapsedTimeDelta" type="void" visibility="0x00" properties="0x00">
-   <code>if ( m_intervalCount &gt; 120 )
+   <code>if ( m_running )
 {
-    m_avgElapsedTimeDelta = m_avgElapsedTimeDelta / m_intervalCount;
-    m_avgElapsedTime = m_avgElapsedTime / m_intervalCount;
+    if ( m_intervalCount &gt;= kIntervalCount )
+    {
+        m_avgElapsedTimeDelta = m_avgElapsedTimeDelta / m_intervalCount;
+        m_avgElapsedTime = m_avgElapsedTime / m_intervalCount;
 
-    CONSOLE_DISPLAY_ARGS(
-        &quot;max/min/avg/avg/cnt elapsed time delta us = %d/%d/%d/%d/%d\r\n&quot;,
-        m_maxElapsedTimeDelta, m_minElapsedTimeDelta,
-        m_avgElapsedTimeDelta, m_avgElapsedTime,
-        m_intervalThresholdCount);
+        CONSOLE_DISPLAY_ARGS(
+            &quot;max/min/avg/avg/cnt elapsed time delta us = %d/%d/%d/%d/%d\r\n&quot;,
+            m_maxElapsedTimeDelta, m_minElapsedTimeDelta,
+            m_avgElapsedTimeDelta, m_avgElapsedTime,
+            m_intervalThresholdCount);
 
-    m_maxElapsedTimeDelta = 0;
-    m_minElapsedTimeDelta = 10000;
-    m_avgElapsedTimeDelta = 0;
-    m_avgElapsedTime = 0;
-    m_intervalEndTime = getMicros();
-    m_intervalThresholdCount = 0;
-    m_intervalCount = 0;
+        Reset();
+    }
 }</code>
   </operation>
   <!--${BaseAOs::CMeasure::Initialize}-->
   <operation name="Initialize" type="void" visibility="0x00" properties="0x00">
-   <code>m_intervalElapsedTime = 0;
-m_maxElapsedTimeDelta = 0;
-m_minElapsedTimeDelta = 10000;
-m_avgElapsedTimeDelta = 0;
-m_avgElapsedTime = 0;
-m_intervalCount = 0;
-m_intervalThresholdCount = 0;
-m_updateCount = 0;</code>
+   <!--${BaseAOs::CMeasure::Initialize::minElapsedTime=1000}-->
+   <parameter name="minElapsedTime=1000" type="std::uint32_t"/>
+   <!--${BaseAOs::CMeasure::Initialize::intervalOffset=4}-->
+   <parameter name="intervalOffset=4" type="std::uint32_t"/>
+   <!--${BaseAOs::CMeasure::Initialize::intervalCount=120}-->
+   <parameter name="intervalCount=120" type="std::uint32_t"/>
+   <code>kIntervalOffset = intervalOffset;
+kMinElapsedTime = minElapsedTime;
+kIntervalCount = intervalCount;
+
+Reset();
+m_running = false;</code>
   </operation>
   <!--${BaseAOs::CMeasure::Start}-->
   <operation name="Start" type="void" visibility="0x00" properties="0x00">
@@ -285,6 +298,25 @@ m_updateCount = 0;</code>
   <!--${BaseAOs::CMeasure::CMeasure}-->
   <operation name="CMeasure" type="" visibility="0x00" properties="0x00">
    <code>: kIntervalOffset(4)</code>
+  </operation>
+  <!--${BaseAOs::CMeasure::Run}-->
+  <operation name="Run" type="void" visibility="0x00" properties="0x00">
+   <code>m_running = true;</code>
+  </operation>
+  <!--${BaseAOs::CMeasure::Stop}-->
+  <operation name="Stop" type="void" visibility="0x00" properties="0x00">
+   <code>m_running = false;</code>
+  </operation>
+  <!--${BaseAOs::CMeasure::Reset}-->
+  <operation name="Reset" type="void" visibility="0x00" properties="0x00">
+   <code>m_intervalElapsedTime = 0;
+m_maxElapsedTimeDelta = 0;
+m_minElapsedTimeDelta = 100;
+m_avgElapsedTimeDelta = 0;
+m_avgElapsedTime = 0;
+m_intervalCount = 0;
+m_intervalThresholdCount = 0;
+m_updateCount = 0;</code>
   </operation>
  </class>
 </package>

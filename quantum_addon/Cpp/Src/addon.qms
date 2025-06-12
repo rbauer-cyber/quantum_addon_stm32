@@ -10,7 +10,7 @@
  </group>
  <group name="windows">
   <item id="BaseAOs::Terminal::SM">0,0,685,621,*</item>
-  <item id=".::terminal.cpp">0,0,697,663</item>
+  <item id=".::terminal.cpp">-12,0,697,663</item>
   <item id=".::../Inc::terminal.hpp">0,353,596,300</item>
   <item id=".::measure.cpp">0,0,596,300</item>
   <item id=".::../Inc::measure.hpp">89,300,596,300</item>

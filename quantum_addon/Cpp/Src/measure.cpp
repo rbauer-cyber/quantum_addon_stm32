@@ -53,85 +53,90 @@ namespace APP {
 
 //${BaseAOs::CMeasure::UpdateElapsedTime} ....................................
 void CMeasure::UpdateElapsedTime() {
-    m_intervalEndTime = getMicros();
-    uint32_t elapsedTime = m_intervalEndTime - m_intervalStartTime;
-    uint32_t elapsedTimeDelta = 0;
-
-    if ( elapsedTime > 1000 )
+    if ( m_running )
     {
-        if ( m_updateCount > kIntervalOffset )
+        m_intervalEndTime = getMicros();
+        uint32_t elapsedTime = m_intervalEndTime - m_intervalStartTime;
+        uint32_t elapsedTimeDelta = 0;
+
+        if ( elapsedTime >= kMinElapsedTime )
         {
-            if ( elapsedTime > m_intervalElapsedTime )
-                elapsedTimeDelta = elapsedTime - m_intervalElapsedTime;
+            if ( m_updateCount >= kIntervalOffset )
+            {
+                if ( elapsedTime > m_intervalElapsedTime )
+                    elapsedTimeDelta = elapsedTime - m_intervalElapsedTime;
+                else
+                    elapsedTimeDelta = m_intervalElapsedTime - elapsedTime;
+
+                m_intervalCount += 1;
+
+                if ( elapsedTimeDelta > m_maxElapsedTimeDelta )
+                {
+                    m_maxElapsedTimeDelta = elapsedTimeDelta;
+                }
+                if ( elapsedTimeDelta < m_minElapsedTimeDelta )
+                {
+                    m_minElapsedTimeDelta = elapsedTimeDelta;
+                }
+
+                m_avgElapsedTimeDelta += elapsedTimeDelta;
+                m_avgElapsedTime += elapsedTime;
+
+                if ( elapsedTimeDelta > 100 )
+                {
+                    m_intervalThresholdCount += 1;
+                }
+            }
             else
-                elapsedTimeDelta = m_intervalElapsedTime - elapsedTime;
-
-            m_intervalCount += 1;
-
-            if ( elapsedTimeDelta > m_maxElapsedTimeDelta )
             {
-                m_maxElapsedTimeDelta = elapsedTimeDelta;
-            }
-            if ( elapsedTimeDelta < m_minElapsedTimeDelta )
-            {
-                m_minElapsedTimeDelta = elapsedTimeDelta;
+                m_updateCount += 1;
             }
 
-            m_avgElapsedTimeDelta += elapsedTimeDelta;
-            m_avgElapsedTime += elapsedTime;
-
-            if ( elapsedTimeDelta > 100 )
-            {
-                m_intervalThresholdCount += 1;
-            }
+            m_intervalElapsedTime = elapsedTime;
         }
-        else
-        {
-            m_updateCount += 1;
-        }
-
-        m_intervalElapsedTime = elapsedTime;
     }
 }
 
 //${BaseAOs::CMeasure::DisplayElapsedTime} ...................................
 void CMeasure::DisplayElapsedTime() {
-    CONSOLE_DISPLAY_ARGS("elapsed time us = %d\r\n", m_intervalElapsedTime);
+    if ( m_running )
+    {
+        CONSOLE_DISPLAY_ARGS("elapsed time us = %d\r\n", m_intervalElapsedTime);
+    }
 }
 
 //${BaseAOs::CMeasure::DisplayElapsedTimeDelta} ..............................
 void CMeasure::DisplayElapsedTimeDelta() {
-    if ( m_intervalCount > 120 )
+    if ( m_running )
     {
-        m_avgElapsedTimeDelta = m_avgElapsedTimeDelta / m_intervalCount;
-        m_avgElapsedTime = m_avgElapsedTime / m_intervalCount;
+        if ( m_intervalCount >= kIntervalCount )
+        {
+            m_avgElapsedTimeDelta = m_avgElapsedTimeDelta / m_intervalCount;
+            m_avgElapsedTime = m_avgElapsedTime / m_intervalCount;
 
-        CONSOLE_DISPLAY_ARGS(
-            "max/min/avg/avg/cnt elapsed time delta us = %d/%d/%d/%d/%d\r\n",
-            m_maxElapsedTimeDelta, m_minElapsedTimeDelta,
-            m_avgElapsedTimeDelta, m_avgElapsedTime,
-            m_intervalThresholdCount);
+            CONSOLE_DISPLAY_ARGS(
+                "max/min/avg/avg/cnt elapsed time delta us = %d/%d/%d/%d/%d\r\n",
+                m_maxElapsedTimeDelta, m_minElapsedTimeDelta,
+                m_avgElapsedTimeDelta, m_avgElapsedTime,
+                m_intervalThresholdCount);
 
-        m_maxElapsedTimeDelta = 0;
-        m_minElapsedTimeDelta = 10000;
-        m_avgElapsedTimeDelta = 0;
-        m_avgElapsedTime = 0;
-        m_intervalEndTime = getMicros();
-        m_intervalThresholdCount = 0;
-        m_intervalCount = 0;
+            Reset();
+        }
     }
 }
 
 //${BaseAOs::CMeasure::Initialize} ...........................................
-void CMeasure::Initialize() {
-    m_intervalElapsedTime = 0;
-    m_maxElapsedTimeDelta = 0;
-    m_minElapsedTimeDelta = 10000;
-    m_avgElapsedTimeDelta = 0;
-    m_avgElapsedTime = 0;
-    m_intervalCount = 0;
-    m_intervalThresholdCount = 0;
-    m_updateCount = 0;
+void CMeasure::Initialize(
+    std::uint32_t minElapsedTime,
+    std::uint32_t intervalOffset,
+    std::uint32_t intervalCount)
+{
+    kIntervalOffset = intervalOffset;
+    kMinElapsedTime = minElapsedTime;
+    kIntervalCount = intervalCount;
+
+    Reset();
+    m_running = false;
 }
 
 //${BaseAOs::CMeasure::Start} ................................................
@@ -143,6 +148,28 @@ void CMeasure::Start() {
 CMeasure::CMeasure()
 : kIntervalOffset(4)
 {}
+
+//${BaseAOs::CMeasure::Run} ..................................................
+void CMeasure::Run() {
+    m_running = true;
+}
+
+//${BaseAOs::CMeasure::Stop} .................................................
+void CMeasure::Stop() {
+    m_running = false;
+}
+
+//${BaseAOs::CMeasure::Reset} ................................................
+void CMeasure::Reset() {
+    m_intervalElapsedTime = 0;
+    m_maxElapsedTimeDelta = 0;
+    m_minElapsedTimeDelta = 100;
+    m_avgElapsedTimeDelta = 0;
+    m_avgElapsedTime = 0;
+    m_intervalCount = 0;
+    m_intervalThresholdCount = 0;
+    m_updateCount = 0;
+}
 
 } // namespace APP
 //$enddef${BaseAOs::CMeasure} ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

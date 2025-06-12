@@ -55,18 +55,27 @@ public:
     std::uint32_t m_intervalCount;
     std::uint32_t m_minElapsedTimeDelta;
     std::uint32_t m_avgElapsedTimeDelta;
-    const std::uint32_t kIntervalOffset;
+    std::uint32_t kIntervalOffset;
     std::uint32_t m_avgElapsedTime;
     std::uint32_t m_intervalThresholdCount;
     std::uint16_t m_updateCount;
+    std::uint32_t kMinElapsedTime;
+    std::uint32_t kIntervalCount;
+    bool m_running;
 
 public:
     void UpdateElapsedTime();
     void DisplayElapsedTime();
     void DisplayElapsedTimeDelta();
-    void Initialize();
+    void Initialize(
+        std::uint32_t minElapsedTime=1000,
+        std::uint32_t intervalOffset=4,
+        std::uint32_t intervalCount=120);
     void Start();
     CMeasure();
+    void Run();
+    void Stop();
+    void Reset();
 }; // class CMeasure
 
 } // namespace APP
