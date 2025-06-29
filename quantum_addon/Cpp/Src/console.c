@@ -23,7 +23,7 @@ void consoleInit()
 	//Serial.begin(115200);
 }
 
-static char s_buffer[80];
+static char s_buffer[120];
 static size_t s_bufferSize = sizeof(s_buffer);
 
 void consoleDisplayArgs(const char * format, ... )
@@ -59,7 +59,7 @@ void consoleDisplay(const char* pMsg)
 }
 
 uint8_t s_rxKeyBuf[2] = {0};
-uint8_t s_rxBuffer[20] = {0};
+uint8_t s_rxBuffer[80] = {0};
 uint8_t s_rxBufferSize = ARRAY_SIZE(s_rxBuffer);
 uint8_t s_rxIndex = 0;
 uint8_t s_inputReady = 0;

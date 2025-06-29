@@ -101,7 +101,7 @@ void CMeasure::UpdateElapsedTime() {
 void CMeasure::DisplayElapsedTime() {
     if ( m_running )
     {
-        CONSOLE_DISPLAY_ARGS("elapsed time us = %d\r\n", m_intervalElapsedTime);
+        CONSOLE_DISPLAY_ARGS("elapsed time us = %d;\r\n", m_intervalElapsedTime);
     }
 }
 
@@ -115,7 +115,7 @@ void CMeasure::DisplayElapsedTimeDelta() {
             m_avgElapsedTime = m_avgElapsedTime / m_intervalCount;
 
             CONSOLE_DISPLAY_ARGS(
-                "max/min/avg/avg/cnt elapsed time delta us = %d/%d/%d/%d/%d\r\n",
+                "max/min/avg/avg/cnt elapsed time delta us = %d/%d/%d/%d/%d;\r\n",
                 m_maxElapsedTimeDelta, m_minElapsedTimeDelta,
                 m_avgElapsedTimeDelta, m_avgElapsedTime,
                 m_intervalThresholdCount);

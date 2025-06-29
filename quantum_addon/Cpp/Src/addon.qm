@@ -60,7 +60,7 @@ $declare ${BaseAOs::CMeasure}
   <file name="terminal.cpp">
    <text>#include &quot;qpcpp.hpp&quot;             // QP/C++ real-time embedded framework
 #include &quot;terminal.hpp&quot;               // DPP Application interface
-
+#include &lt;cstring&gt;
 #include &quot;console.h&quot;
 
 //----------------------------------------------------------------------------

@@ -37,7 +37,7 @@
 //$endhead${.::terminal.cpp} ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #include "qpcpp.hpp"             // QP/C++ real-time embedded framework
 #include "terminal.hpp"               // DPP Application interface
-
+#include <cstring>
 #include "console.h"
 
 //----------------------------------------------------------------------------
@@ -129,17 +129,10 @@ Q_STATE_DEF(Terminal, running) {
 Q_STATE_DEF(Terminal, receiveUserReply) {
     QP::QState status_;
     switch (e->sig) {
-        //${BaseAOs::Terminal::SM::running::receiveUserReply}
-        case Q_ENTRY_SIG: {
-            //consoleDisplay("Terminal ::Receiving USART\r\n");
-            m_gotReply = false;
-            m_gotChar = false;
-            m_replySize = 0;
-            status_ = Q_RET_HANDLED;
-            break;
-        }
         //${BaseAOs::Terminal::SM::running::receiveUserReply::initial}
         case Q_INIT_SIG: {
+            //consoleDisplay("Terminal ::Receiving USART\r\n");
+            memset(m_input, 0, m_maxInputSize);
             m_gotReply = false;
             m_gotChar = true;
             m_replySize = 0;
@@ -168,7 +161,7 @@ Q_STATE_DEF(Terminal, receivingNextChar) {
                 consoleReadByteAsync();
             }
 
-            m_timeEvt.armX(300, 0U);
+            m_timeEvt.armX(50, 0U);
             status_ = Q_RET_HANDLED;
             break;
         }
@@ -193,8 +186,9 @@ Q_STATE_DEF(Terminal, receivingNextChar) {
             //${BaseAOs::Terminal::SM::running::receiveUserReply::receivingNextCha~::TIMEOUT::[GotReply]}
             else if (m_gotReply) {
                 m_replySize = consoleReadString(m_input, m_maxInputSize);
-                consoleDisplay("\r\n");
-                consoleDisplay(m_input);
+                //consoleDisplay("\r\n");
+                //consoleDisplay(m_input);
+                consoleDisplayArgs("\r\n%s;", m_input);
                 this->DispatchCommand(m_input[0]);
                 status_ = tran(&sendUserPrompt);
             }
@@ -260,7 +254,7 @@ Q_STATE_DEF(Terminal, sendUserPrompt) {
         }
         //${BaseAOs::Terminal::SM::running::sendUserPrompt::TIMEOUT}
         case TIMEOUT_SIG: {
-            consoleDisplay("Enter command: ");
+            consoleDisplay("Enter command: \r\n");
             status_ = tran(&receiveUserReply);
             break;
         }
