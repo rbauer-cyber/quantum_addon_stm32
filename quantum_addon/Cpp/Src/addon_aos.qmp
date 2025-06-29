@@ -70,13 +70,11 @@ LoadCustomEvt(pe);</action>
     </tran>
     <!--${BaseAOs::Terminal::SM::running::receiveUserReply}-->
     <state name="receiveUserReply">
-     <entry>//consoleDisplay(&quot;Terminal ::Receiving USART\r\n&quot;);
-m_gotReply = false;
-m_gotChar = false;
-m_replySize = 0;</entry>
      <!--${BaseAOs::Terminal::SM::running::receiveUserReply::initial}-->
      <initial target="../1">
-      <action>m_gotReply = false;
+      <action>//consoleDisplay(&quot;Terminal ::Receiving USART\r\n&quot;);
+memset(m_input, 0, m_maxInputSize);
+m_gotReply = false;
 m_gotChar = true;
 m_replySize = 0;
 
@@ -93,7 +91,7 @@ consoleReadAsyncInit();</action>
     consoleReadByteAsync();
 }
 
-m_timeEvt.armX(300, 0U);</entry>
+m_timeEvt.armX(50, 0U);</entry>
       <exit>m_timeEvt.disarm();</exit>
       <!--${BaseAOs::Terminal::SM::running::receiveUserReply::receivingNextCha~::TIMEOUT}-->
       <tran trig="TIMEOUT">
@@ -115,8 +113,9 @@ if ( m_gotChar )
        <choice target="../../../../4">
         <guard brief="GotReply">m_gotReply</guard>
         <action brief="Done">m_replySize = consoleReadString(m_input, m_maxInputSize);
-consoleDisplay(&quot;\r\n&quot;);
-consoleDisplay(m_input);
+//consoleDisplay(&quot;\r\n&quot;);
+//consoleDisplay(m_input);
+consoleDisplayArgs(&quot;\r\n%s;&quot;, m_input);
 this-&gt;DispatchCommand(m_input[0]);</action>
         <choice_glyph conn="22,66,4,1,9,35,-46,-15">
          <action box="-8,4,16,3"/>
@@ -131,9 +130,7 @@ this-&gt;DispatchCommand(m_input[0]);</action>
        <exit box="0,5,6,2"/>
       </state_glyph>
      </state>
-     <state_glyph node="11,41,34,38">
-      <entry box="0,3,6,2"/>
-     </state_glyph>
+     <state_glyph node="11,41,34,38"/>
     </state>
     <!--${BaseAOs::Terminal::SM::running::start}-->
     <state name="start">
@@ -158,7 +155,7 @@ m_timeEvt.armX(1000, 0U);</entry>
      <exit>m_timeEvt.disarm();</exit>
      <!--${BaseAOs::Terminal::SM::running::sendUserPrompt::TIMEOUT}-->
      <tran trig="TIMEOUT" target="../../2">
-      <action brief="Send Prompt">consoleDisplay(&quot;Enter command: &quot;);</action>
+      <action brief="Send Prompt">consoleDisplay(&quot;Enter command: \r\n&quot;);</action>
       <tran_glyph conn="28,33,2,0,8">
        <action box="-8,3,21,2"/>
       </tran_glyph>
@@ -254,7 +251,7 @@ m_timeEvt.armX(1000, 0U);</entry>
   <operation name="DisplayElapsedTime" type="void" visibility="0x00" properties="0x00">
    <code>if ( m_running )
 {
-    CONSOLE_DISPLAY_ARGS(&quot;elapsed time us = %d\r\n&quot;, m_intervalElapsedTime);
+    CONSOLE_DISPLAY_ARGS(&quot;elapsed time us = %d;\r\n&quot;, m_intervalElapsedTime);
 }</code>
   </operation>
   <!--${BaseAOs::CMeasure::DisplayElapsedTimeDelta}-->
@@ -267,7 +264,7 @@ m_timeEvt.armX(1000, 0U);</entry>
         m_avgElapsedTime = m_avgElapsedTime / m_intervalCount;
 
         CONSOLE_DISPLAY_ARGS(
-            &quot;max/min/avg/avg/cnt elapsed time delta us = %d/%d/%d/%d/%d\r\n&quot;,
+            &quot;max/min/avg/avg/cnt elapsed time delta us = %d/%d/%d/%d/%d;\r\n&quot;,
             m_maxElapsedTimeDelta, m_minElapsedTimeDelta,
             m_avgElapsedTimeDelta, m_avgElapsedTime,
             m_intervalThresholdCount);
