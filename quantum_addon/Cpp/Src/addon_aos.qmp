@@ -17,6 +17,8 @@
   <attribute name="m_gotChar" type="bool" visibility="0x00" properties="0x00"/>
   <!--${BaseAOs::Terminal::m_maxInputSize}-->
   <attribute name="m_maxInputSize" type="std::uint8_t" visibility="0x00" properties="0x00"/>
+  <!--${BaseAOs::Terminal::m_consoleInit}-->
+  <attribute name="m_consoleInit" type="std::uint8_t" visibility="0x00" properties="0x00"/>
   <!--${BaseAOs::Terminal::Terminal}-->
   <operation name="Terminal" type="" visibility="0x00" properties="0x00">
    <code>  : QActive(Q_STATE_CAST(&amp;initial)),
@@ -40,6 +42,20 @@
 CustomEvt* pe = Q_NEW(CustomEvt, SHOW_STATE_SIG);
 QP::QActive::PUBLISH(pe, this);</code>
   </operation>
+  <!--${BaseAOs::Terminal::ConsoleAsyncReadInit}-->
+  <operation name="ConsoleAsyncReadInit" type="void" visibility="0x00" properties="0x00">
+   <code>if ( m_consoleInit == 0 )
+{
+    memset(m_input, 0, m_maxInputSize);
+    m_gotReply = false;
+    m_gotChar = false;
+    m_replySize = 0;
+
+    consoleReadAsyncInit();
+    consoleReadByteAsync();
+    m_consoleInit = 1;
+}</code>
+  </operation>
   <!--${BaseAOs::Terminal::SM}-->
   <statechart properties="0x00">
    <!--${BaseAOs::Terminal::SM::initial}-->
@@ -53,10 +69,10 @@ subscribe(CUSTOM_SIG);</action>
    <!--${BaseAOs::Terminal::SM::running}-->
    <state name="running">
     <!--${BaseAOs::Terminal::SM::running::initial}-->
-    <initial target="../3">
+    <initial target="../4">
      <action>consoleDisplay(&quot;Terminal running\r\n&quot;);
 m_maxInputSize = sizeof(m_input)/sizeof(m_input[0]);</action>
-     <initial_glyph color="3" conn="53,11,5,1,-11">
+     <initial_glyph color="3" conn="53,10,5,1,-11">
       <action box="-9,-3,10,2"/>
      </initial_glyph>
     </initial>
@@ -73,13 +89,17 @@ LoadCustomEvt(pe);</action>
      <!--${BaseAOs::Terminal::SM::running::receiveUserReply::initial}-->
      <initial target="../1">
       <action>//consoleDisplay(&quot;Terminal ::Receiving USART\r\n&quot;);
+#if 0
 memset(m_input, 0, m_maxInputSize);
 m_gotReply = false;
 m_gotChar = true;
 m_replySize = 0;
 
-consoleReadAsyncInit();</action>
-      <initial_glyph conn="17,47,5,0,11,4">
+consoleReadAsyncInit();
+#else
+m_gotChar = true;
+#endif</action>
+      <initial_glyph conn="17,49,5,0,11,4">
        <action box="0,-2,10,2"/>
       </initial_glyph>
      </initial>
@@ -105,32 +125,56 @@ if ( m_gotChar )
        <choice target="../..">
         <guard brief="NotDone">!m_gotReply</guard>
         <action brief="Got Char"/>
-        <choice_glyph conn="22,66,5,2,11,-8">
+        <choice_glyph conn="22,68,5,2,11,-8">
          <action box="4,-3,17,2"/>
         </choice_glyph>
        </choice>
        <!--${BaseAOs::Terminal::SM::running::receiveUserReply::receivingNextCha~::TIMEOUT::[GotReply]}-->
-       <choice target="../../../../4">
+       <choice target="../../../../3">
         <guard brief="GotReply">m_gotReply</guard>
         <action brief="Done">m_replySize = consoleReadString(m_input, m_maxInputSize);
 //consoleDisplay(&quot;\r\n&quot;);
 //consoleDisplay(m_input);
 consoleDisplayArgs(&quot;\r\n%s;&quot;, m_input);
 this-&gt;DispatchCommand(m_input[0]);</action>
-        <choice_glyph conn="22,66,4,1,9,35,-46,-15">
+        <choice_glyph conn="22,68,4,1,9,35,-50,-15">
          <action box="-8,4,16,3"/>
         </choice_glyph>
        </choice>
-       <tran_glyph conn="22,58,2,-1,8">
+       <tran_glyph conn="22,60,2,-1,8">
         <action box="-7,2,19,2"/>
        </tran_glyph>
       </tran>
-      <state_glyph node="17,51,22,7">
+      <state_glyph node="17,53,22,7">
        <entry box="0,3,6,2"/>
        <exit box="0,5,6,2"/>
       </state_glyph>
      </state>
-     <state_glyph node="11,41,34,38"/>
+     <state_glyph node="11,43,34,38"/>
+    </state>
+    <!--${BaseAOs::Terminal::SM::running::sendUserPrompt}-->
+    <state name="sendUserPrompt">
+     <entry>ConsoleAsyncReadInit();
+m_timeEvt.armX(1000, 0U);</entry>
+     <exit>m_timeEvt.disarm();</exit>
+     <!--${BaseAOs::Terminal::SM::running::sendUserPrompt::TIMEOUT}-->
+     <tran trig="TIMEOUT">
+      <action brief="Send Prompt">consoleDisplay(&quot;Enter command;\r\n&quot;);</action>
+      <!--${BaseAOs::Terminal::SM::running::sendUserPrompt::TIMEOUT::[InputReady]}-->
+      <choice target="../../../2">
+       <guard brief="InputReady">consoleInputReady()</guard>
+       <choice_glyph conn="32,31,5,0,-7,12">
+        <action box="-16,1,10,2"/>
+       </choice_glyph>
+      </choice>
+      <tran_glyph conn="42,31,1,-1,-10">
+       <action box="-19,-3,21,2"/>
+      </tran_glyph>
+     </tran>
+     <state_glyph node="12,23,30,13">
+      <entry box="0,3,6,2"/>
+      <exit box="0,5,6,2"/>
+     </state_glyph>
     </state>
     <!--${BaseAOs::Terminal::SM::running::start}-->
     <state name="start">
@@ -138,29 +182,14 @@ this-&gt;DispatchCommand(m_input[0]);</action>
 m_timeEvt.armX(1000, 0U);</entry>
      <exit>m_timeEvt.disarm();</exit>
      <!--${BaseAOs::Terminal::SM::running::start::TIMEOUT}-->
-     <tran trig="TIMEOUT" target="../../4">
-      <action brief="Ready">PublishShowStateEvent();</action>
-      <tran_glyph conn="28,17,2,0,8">
-       <action box="-8,3,16,2"/>
+     <tran trig="TIMEOUT" target="../../3">
+      <action brief="Ready">PublishShowStateEvent();
+m_consoleInit = 0;</action>
+      <tran_glyph conn="28,16,2,0,7">
+       <action box="-8,2,16,2"/>
       </tran_glyph>
      </tran>
-     <state_glyph node="12,8,30,9">
-      <entry box="0,3,6,2"/>
-      <exit box="0,5,6,2"/>
-     </state_glyph>
-    </state>
-    <!--${BaseAOs::Terminal::SM::running::sendUserPrompt}-->
-    <state name="sendUserPrompt">
-     <entry>m_timeEvt.armX(500, 0U);</entry>
-     <exit>m_timeEvt.disarm();</exit>
-     <!--${BaseAOs::Terminal::SM::running::sendUserPrompt::TIMEOUT}-->
-     <tran trig="TIMEOUT" target="../../2">
-      <action brief="Send Prompt">consoleDisplay(&quot;Enter command: \r\n&quot;);</action>
-      <tran_glyph conn="28,33,2,0,8">
-       <action box="-8,3,21,2"/>
-      </tran_glyph>
-     </tran>
-     <state_glyph node="12,25,30,8">
+     <state_glyph node="12,7,30,9">
       <entry box="0,3,6,2"/>
       <exit box="0,5,6,2"/>
      </state_glyph>

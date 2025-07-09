@@ -254,7 +254,7 @@ Q_STATE_DEF(Terminal, sendUserPrompt) {
         }
         //${BaseAOs::Terminal::SM::running::sendUserPrompt::TIMEOUT}
         case TIMEOUT_SIG: {
-            consoleDisplay("Enter command: \r\n");
+            consoleDisplay("Enter command;\r\n");
             status_ = tran(&receiveUserReply);
             break;
         }
